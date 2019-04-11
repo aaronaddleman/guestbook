@@ -6,6 +6,8 @@
   :dependencies [[cheshire "5.8.1"]
                  [clojure.java-time "0.3.2"]
                  [com.h2database/h2 "1.4.197"]
+                 [reagent "0.8.1"]
+                 [reagent-utils "0.3.2"]
                  [conman "0.8.3"]
                  [cprop "0.1.13"]
                  [funcool/struct "1.3.0"]
@@ -20,6 +22,7 @@
                  [mount "0.1.16"]
                  [nrepl "0.6.0"]
                  [org.clojure/clojure "1.10.0"]
+                 [org.clojure/spec.alpha "0.2.176"]
                  [org.clojure/clojurescript "1.10.520"]
                  [org.clojure/tools.cli "0.4.2"]
                  [org.clojure/tools.logging "0.4.1"]
@@ -27,6 +30,7 @@
                  [org.webjars.npm/material-icons "0.3.0"]
                  [org.webjars/webjars-locator "0.36"]
                  [org.webjars/webjars-locator-jboss-vfs "0.1.0"]
+                 [ring-server "0.5.0"]
                  [ring-webjars "0.2.0"]
                  [ring/ring-core "1.7.1"]
                  [ring/ring-defaults "0.3.2"]
@@ -36,37 +40,49 @@
 
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
-  :resource-paths ["resources" "target/cljsbuild"]
-  :cljsbuild
-  {:builds
-   {:app
-    {:source-paths ["src/cljs"]
-     :compiler
-     {:main (str project-ns ".app")
-      :asset-path "/js/out"
-      :output-to "target/cljsbuild/public/js/app.js"
-      :output-dir "target/cljsbuild/public/js/out"
-      :optimizations :none
-      :source-map true
-      :pretty-print true}}
-    :min
-    {:source-paths ["src/cljs"]
-     :compiler
-     {:output-to "target/cljsbuild/public/js/app.js"
-      :output-dir "target/uberjar"
-      :externs ["react/externs/react.js"]
-      :optimizations :advanced
-      :pretty-print false}}}}
 
-  :target-path "target/%s/"
+  :cljsbuild
+  {:builds {:min
+            {:source-paths ["src/cljs" "src/cljc" "env/prod/cljs"]
+             :compiler
+             {:output-to        "target/cljsbuild/public/js/app.js"
+              :output-dir       "target/cljsbuild/public/js"
+              :source-map       "target/cljsbuild/public/js/app.js.map"
+              :optimizations :advanced
+              :infer-externs true
+              :pretty-print  false}}
+            :app
+            {:source-paths ["src/cljs" "src/cljc" "env/dev/cljs"]
+             :figwheel {:on-jsload "things.core/mount-root"}
+             :compiler
+             {:main "things.dev"
+              :asset-path "/js/out"
+              :output-to "target/cljsbuild/public/js/app.js"
+              :output-dir "target/cljsbuild/public/js/out"
+              :source-map true
+              :optimizations :none
+              :pretty-print  true}}
+
+
+
+            }
+   }
+
+ 
+  :resource-paths ["resources" "target/cljsbuild"]
+  :clean-targets ^{:project false}
+  [:target-path
+   [:cljsbuild :builds :app :compiler :output-dir]
+   [:cljsbuild :builds :app :compiler :output-to]]
+
   :main ^:skip-aot guestbook.core
 
   :plugins [[lein-immutant "2.1.0"]
-            [lein-cljsbuild "1.1.3"]]
+            [lein-cljsbuild "1.1.3"]
+            [lein-environ "1.1.0"]]
 
   :profiles
   {:uberjar {:omit-source true
-             :prep-tasks ["compile" ["cljsbuild" "once" "min"]]
              :aot :all
              :uberjar-name "guestbook.jar"
              :source-paths ["env/prod/clj"]
